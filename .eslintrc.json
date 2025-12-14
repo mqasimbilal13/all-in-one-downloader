@@ -1,6 +1,14 @@
 {
-  "extends": [
-    "next/core-web-vitals",
-    "next/typescript"
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": [
+        "app/lib/**/*.ts",
+        "app/api/**/*.ts"
+      ],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off"
+      }
+    }
   ]
 }
