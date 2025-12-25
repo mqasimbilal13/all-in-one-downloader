@@ -53,13 +53,13 @@ export default function Header() {
               Home
             </Link>
             <Link
-              href="#features"
+              href="/Features"
               className="text-slate-400 hover:text-slate-100 transition-colors"
             >
               Features
             </Link>
             <Link
-              href="#supported"
+              href="/Platforms"
               className="text-slate-400 hover:text-slate-100 transition-colors"
             >
               Platforms
