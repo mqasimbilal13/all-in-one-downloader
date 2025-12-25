@@ -1,17 +1,1 @@
-:root { color-scheme: dark; }
-* { box-sizing: border-box; }
-html, body { padding: 0; margin: 0; }
-body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background: #0b0c10; color: #e6e6e6; }
-a { color: inherit; text-decoration: none; }
-input, button, select { font: inherit; }
-.card { background: #11131a; border: 1px solid #23263a; border-radius: 14px; padding: 14px; }
-.muted { opacity: .75; }
-.btn { background: #e6e6e6; color: #0b0c10; border: 0; border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 700; }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn2 { background: transparent; color: #e6e6e6; border: 1px solid #34395a; border-radius: 12px; padding: 10px 12px; cursor: pointer; font-weight: 700; }
-.grid { display: grid; gap: 12px; }
-.row { display: flex; gap: 10px; align-items: center; }
-.stack { display: grid; gap: 10px; }
-.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid #2a2f4a; border-radius: 999px; background: rgba(255,255,255,0.03); font-size: 12px; }
-hr { border: 0; border-top: 1px solid #23263a; margin: 14px 0; }
-pre { overflow: auto; max-height: 380px; background: #0f1118; border: 1px solid #23263a; padding: 12px; border-radius: 12px; }
+@import "tailwindcss";

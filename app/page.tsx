@@ -3,6 +3,10 @@
 import { useMemo, useState } from "react";
 import { extractMedia } from "./lib/extractMedia";
 import type { Extracted, MediaItem } from "./lib/types";
+import Header from "../components/Header/page";
+import Footer from "../components/Footer/page";
+import DownloadButton from "../components/DownloadButton/page";
+import Image from "next/image";
 
 function fileNameFrom(meta: Extracted, item: MediaItem) {
   const base =
@@ -16,8 +20,8 @@ function fileNameFrom(meta: Extracted, item: MediaItem) {
     item.kind === "audio"
       ? "audio"
       : item.width && item.height
-        ? `${item.height}p`
-        : item.ext || "video";
+      ? `${item.height}p`
+      : item.ext || "video";
 
   const ext = item.ext || (item.kind === "audio" ? "mp3" : "mp4");
   return `${base}-${suffix}.${ext}`;
@@ -28,8 +32,22 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [raw, setRaw] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pasteLoading, setPasteLoading] = useState(false);
 
   const meta = useMemo(() => (raw ? extractMedia(raw) : null), [raw]);
+
+  async function handlePaste() {
+    setPasteLoading(true);
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text.startsWith("http")) setUrl(text);
+      else setError("Clipboard doesn't contain a valid URL");
+    } catch {
+      setError("Unable to access clipboard");
+    } finally {
+      setPasteLoading(false);
+    }
+  }
 
   async function onFetch() {
     setLoading(true);
@@ -54,155 +72,140 @@ export default function Page() {
   function download(item: MediaItem) {
     if (!meta) return;
     const filename = fileNameFrom(meta, item);
-    const dl = `/api/download?url=${encodeURIComponent(item.url)}&filename=${encodeURIComponent(filename)}`;
+    const dl = `/api/download?url=${encodeURIComponent(
+      item.url
+    )}&filename=${encodeURIComponent(filename)}`;
     window.open(dl, "_blank");
   }
 
   return (
-    <main style={{ maxWidth: 980, margin: "32px auto", padding: 16 }}>
-      <div className="grid">
-        <div className="card">
-          <div className="row" style={{ justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 800 }}>Social Video Downloader</div>
-              <div className="muted" style={{ marginTop: 6 }}>
-                TikTok / YouTube / Instagram etc. (as long as API returns <code>medias[]</code>)
-              </div>
+    <>
+      <Header />
+
+      <main className="min-h-screen bg-slate-950 text-white">
+        {/* HERO */}
+        <section className="bg-gradient-to-b from-slate-900 to-slate-950 py-20 text-center">
+          <h1 className="text-4xl md:text-5xl font-bold">
+            All-in-One Video Downloader
+          </h1>
+          <p className="mt-4 text-slate-400">
+            Download videos from TikTok, YouTube, Instagram & more
+          </p>
+        </section>
+
+        {/* CONTENT */}
+        <div className="max-w-6xl mx-auto px-4 py-12">
+          {/* INPUT CARD */}
+          <div className="bg-slate-900 rounded-xl p-6 shadow-lg">
+            <h2 className="text-xl font-semibold mb-1">Paste Video URL</h2>
+            <p className="text-sm text-slate-400 mb-6">
+              Supports TikTok, YouTube, Instagram & more
+            </p>
+
+            <div className="flex flex-col md:flex-row gap-3">
+              <input
+                type="text"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Paste video URL here..."
+                disabled={loading}
+                onKeyDown={(e) => e.key === "Enter" && onFetch()}
+                className="flex-1 rounded-lg bg-slate-800 px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+              <button
+                onClick={handlePaste}
+                disabled={pasteLoading}
+                className="rounded-lg bg-slate-700 px-4 py-3 hover:bg-slate-600 transition"
+              >
+                {pasteLoading ? "Pasting..." : "Paste"}
+              </button>
+
+              <button
+                onClick={onFetch}
+                disabled={loading || !url}
+                className="rounded-lg bg-blue-600 px-6 py-3 font-medium hover:bg-blue-700 transition"
+              >
+                {loading ? "Fetching..." : "Fetch"}
+              </button>
             </div>
-            <span className="pill">RapidAPI + download proxy</span>
+
+            {error && (
+              <div className="mt-4 rounded-lg bg-red-900/40 px-4 py-3 text-red-300">
+                {error}
+              </div>
+            )}
           </div>
 
-          <div className="row" style={{ marginTop: 14 }}>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste TikTok / YouTube / Instagram URL..."
-              style={{
-                flex: 1,
-                padding: "12px 14px",
-                borderRadius: 12,
-                border: "1px solid #23263a",
-                background: "#0f1118",
-                color: "#e6e6e6",
-              }}
-            />
-            <button className="btn" onClick={onFetch} disabled={loading || !url}>
-              {loading ? "Fetching..." : "Fetch"}
-            </button>
-          </div>
+          {/* RESULTS */}
+          {meta && (
+            <div className="mt-10 bg-slate-900 rounded-xl p-6 space-y-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {meta.thumbnail && (
+                  <Image
+                    src={meta.thumbnail}
+                    alt="thumbnail"
+                    className="w-full md:w-64 rounded-lg"
+                  />
+                )}
 
-          {error && (
-            <div style={{ marginTop: 12, padding: 12, borderRadius: 12, border: "1px solid #5a2b2b", background: "#1a1010" }}>
-              {error}
+                <div>
+                  <h3 className="text-xl font-semibold">
+                    {meta.title || "Untitled"}
+                  </h3>
+                  <p className="text-slate-400 mt-1">
+                    {meta.platform} {meta.author && `• ${meta.author}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* QUICK DOWNLOAD */}
+              <div className="flex flex-wrap gap-3">
+                {meta.picks.bestVideo && (
+                  <DownloadButton
+                    variant="success"
+                    onClick={() => download(meta.picks.bestVideo!)}
+                  >
+                    Download Best Video
+                  </DownloadButton>
+                )}
+
+                {meta.picks.bestAudio && (
+                  <DownloadButton
+                    variant="primary"
+                    onClick={() => download(meta.picks.bestAudio!)}
+                  >
+                    Download Audio
+                  </DownloadButton>
+                )}
+              </div>
             </div>
           )}
+
+          {/* FEATURES */}
+          <section id="features" className="mt-20">
+            <h2 className="text-3xl font-bold mb-8 text-center">Features</h2>
+            <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                ["📋", "Easy Paste"],
+                ["⚡", "Fast Downloads"],
+                ["🎯", "Multiple Qualities"],
+                ["🔒", "Secure"],
+              ].map(([icon, title]) => (
+                <div
+                  key={title}
+                  className="bg-slate-900 rounded-xl p-6 text-center"
+                >
+                  <div className="text-3xl mb-3">{icon}</div>
+                  <h3 className="font-semibold">{title}</h3>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
+      </main>
 
-        {meta && (
-          <div className="card">
-            <div className="row" style={{ gap: 14 }}>
-              {meta.thumbnail ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={meta.thumbnail}
-                  alt="thumb"
-                  style={{ width: 120, height: 120, borderRadius: 12, objectFit: "cover", border: "1px solid #23263a" }}
-                />
-              ) : null}
-              <div className="stack" style={{ flex: 1 }}>
-                <div style={{ fontSize: 18, fontWeight: 800 }}>{meta.title || "Untitled"}</div>
-                <div className="row" style={{ flexWrap: "wrap" }}>
-                  <span className="pill">Platform: {meta.platform}</span>
-                  {meta.author ? <span className="pill">Author: {meta.author}</span> : null}
-                  {meta.duration != null ? <span className="pill">Duration: {meta.duration}s</span> : null}
-                </div>
-                {meta.originalUrl ? <div className="muted" style={{ wordBreak: "break-all" }}>{meta.originalUrl}</div> : null}
-              </div>
-            </div>
-
-            <hr />
-
-            <div className="row" style={{ flexWrap: "wrap" }}>
-              {meta.platform === "tiktok" ? (
-                <>
-                  <button className="btn" onClick={() => meta.picks.tiktokNoWatermark && download(meta.picks.tiktokNoWatermark)} disabled={!meta.picks.tiktokNoWatermark}>
-                    Download No Watermark
-                  </button>
-                  <button className="btn2" onClick={() => meta.picks.tiktokWatermark && download(meta.picks.tiktokWatermark)} disabled={!meta.picks.tiktokWatermark}>
-                    Download Watermark
-                  </button>
-                  <button className="btn2" onClick={() => meta.picks.bestAudio && download(meta.picks.bestAudio)} disabled={!meta.picks.bestAudio}>
-                    Download Audio
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="btn" onClick={() => meta.picks.bestVideo && download(meta.picks.bestVideo)} disabled={!meta.picks.bestVideo}>
-                    Download Best Video
-                  </button>
-                  <button className="btn2" onClick={() => meta.picks.bestAudio && download(meta.picks.bestAudio)} disabled={!meta.picks.bestAudio}>
-                    Download Best Audio
-                  </button>
-                </>
-              )}
-            </div>
-
-            <hr />
-
-            <div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-              <div className="card" style={{ borderRadius: 12 }}>
-                <div style={{ fontWeight: 800, marginBottom: 10 }}>Video options ({meta.videos.length})</div>
-                <div className="stack">
-                  {meta.videos.map((v) => (
-                    <div key={v.url} className="card" style={{ padding: 12, borderRadius: 12 }}>
-                      <div className="row" style={{ justifyContent: "space-between" }}>
-                        <div className="stack" style={{ gap: 4 }}>
-                          <div style={{ fontWeight: 700 }}>{v.label}</div>
-                          <div className="muted" style={{ fontSize: 12 }}>
-                            {v.ext?.toUpperCase() || "VIDEO"}
-                            {v.width && v.height ? ` • ${v.width}x${v.height}` : ""}
-                            {v.bitrate ? ` • ${Math.round(v.bitrate / 1000)} kbps` : ""}
-                            {v.isMuxed ? " • muxed audio" : ""}
-                            {v.tiktokQuality ? ` • ${v.tiktokQuality}` : ""}
-                          </div>
-                        </div>
-                        <button className="btn2" onClick={() => download(v)}>Download</button>
-                      </div>
-                    </div>
-                  ))}
-                  {meta.videos.length === 0 ? <div className="muted">No video streams found.</div> : null}
-                </div>
-              </div>
-
-              <div className="card" style={{ borderRadius: 12 }}>
-                <div style={{ fontWeight: 800, marginBottom: 10 }}>Audio options ({meta.audios.length})</div>
-                <div className="stack">
-                  {meta.audios.map((a) => (
-                    <div key={a.url} className="card" style={{ padding: 12, borderRadius: 12 }}>
-                      <div className="row" style={{ justifyContent: "space-between" }}>
-                        <div className="stack" style={{ gap: 4 }}>
-                          <div style={{ fontWeight: 700 }}>{a.label}</div>
-                          <div className="muted" style={{ fontSize: 12 }}>
-                            {a.ext?.toUpperCase() || "AUDIO"}
-                            {a.bitrate ? ` • ${Math.round(a.bitrate / 1000)} kbps` : ""}
-                          </div>
-                        </div>
-                        <button className="btn2" onClick={() => download(a)}>Download</button>
-                      </div>
-                    </div>
-                  ))}
-                  {meta.audios.length === 0 ? <div className="muted">No audio streams found.</div> : null}
-                </div>
-              </div>
-            </div>
-
-            <details style={{ marginTop: 12 }}>
-              <summary style={{ cursor: "pointer" }}>Debug JSON</summary>
-              <pre>{JSON.stringify(raw, null, 2)}</pre>
-            </details>
-          </div>
-        )}
-      </div>
-    </main>
+      <Footer />
+    </>
   );
 }
